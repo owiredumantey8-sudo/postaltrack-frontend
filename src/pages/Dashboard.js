@@ -10,7 +10,7 @@ const getUserIdFromToken = () => {
   } catch { return null; }
 };
 
-const API = 'http://localhost:5000';
+const API = 'https://postaltrack-backend-production.up.railway.app';
 
 const norm = (s) => (s || '').toLowerCase().replace(/ /g, '_').replace(/-/g, '_');
 
