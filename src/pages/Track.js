@@ -21,7 +21,7 @@ function Track() {
     setMessage('');
 
     try {
-      const res = await fetch('https://postaltrack-backend-production.up.railway.app/api/parcels/track/' + trackingNumber);
+      const res = await fetch('https://postaltrack-backend.onrender.com/api/parcels/track/' + trackingNumber);
       const data = await res.json();
       if (data.error) {
         setMessage(data.error);
@@ -39,7 +39,7 @@ function Track() {
 
   const fetchEvents = async (parcel_id) => {
     try {
-      const res = await fetch('https://postaltrack-backend-production.up.railway.app/api/parcels/events/' + parcel_id);
+      const res = await fetch('https://postaltrack-backend.onrender.com/api/parcels/events/' + parcel_id);
       const data = await res.json();
       setEvents(data);
     } catch (err) {

@@ -31,7 +31,7 @@ function ResetPassword() {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch('https://postaltrack-backend-production.up.railway.app/api/auth/reset-password', {
+      const res = await fetch('https://postaltrack-backend.onrender.com/api/auth/reset-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token, newPassword }),
