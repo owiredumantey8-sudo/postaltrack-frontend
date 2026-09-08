@@ -5,10 +5,15 @@ function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const isMobile = window.innerWidth < 768;
 
-  const handleLogin = async () => {
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage("");
+
     try {
       const res = await fetch("https://postaltrack-backend.onrender.com/api/auth/login", {
         method: "POST",
@@ -20,9 +25,17 @@ function Login() {
 
       const data = await res.json();
 
+      if (!res.ok) {
+        setMessage(data.message || "Login failed!");
+        setLoading(false);
+        return;
+      }
+
       if (data.token) {
         localStorage.setItem("token", data.token);
         localStorage.setItem("role", data.role);
+        if (data.agent_id) localStorage.setItem("agent_id", data.agent_id);
+        if (data.name) localStorage.setItem("agent_name", data.name);
 
         setMessage("Login successful! Redirecting...");
 
@@ -30,10 +43,12 @@ function Login() {
           window.location.href = "/dashboard";
         }, 1500);
       } else {
-        setMessage(data.error || "Login failed!");
+        setMessage(data.message || "Login failed!");
       }
     } catch (error) {
       setMessage("Server error. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -85,58 +100,68 @@ function Login() {
           </p>
         </div>
 
-        {/* EMAIL */}
-        <div style={{ marginBottom: "18px" }}>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "8px",
-              color: "#1b4332",
-              fontWeight: "600",
-            }}
+        <form onSubmit={handleLogin}>
+          {/* EMAIL */}
+          <div style={{ marginBottom: "18px" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                color: "#1b4332",
+                fontWeight: "600",
+              }}
+            >
+              Email Address
+            </label>
+
+            <input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              style={inputStyle}
+            />
+          </div>
+
+          {/* PASSWORD */}
+          <div style={{ marginBottom: "15px" }}>
+            <label
+              style={{
+                display: "block",
+                marginBottom: "8px",
+                color: "#1b4332",
+                fontWeight: "600",
+              }}
+            >
+              Password
+            </label>
+
+            <input
+              type="password"
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={{ textAlign: 'right', marginBottom: '20px' }}>
+            <Link to="/forgot-password" style={{ color: '#2d6a4f', fontSize: '0.85rem', textDecoration: 'none', fontWeight: '600' }}>
+              Forgot Password?
+            </Link>
+          </div>
+
+          {/* BUTTON */}
+          <button 
+            type="submit" 
+            disabled={loading} 
+            style={{ ...loginBtn, opacity: loading ? 0.7 : 1, cursor: loading ? "not-allowed" : "pointer" }}
           >
-            Email Address
-          </label>
-
-          <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            style={inputStyle}
-          />
-        </div>
-
-        {/* PASSWORD */}
-        <div style={{ marginBottom: "25px" }}>
-          <label
-            style={{
-              display: "block",
-              marginBottom: "8px",
-              color: "#1b4332",
-              fontWeight: "600",
-            }}
-          >
-            Password
-          </label>
-
-          <input
-            type="password"
-            placeholder="Enter your password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            style={inputStyle}
-          />
-        </div><div style={{ textAlign: 'right', marginBottom: '1rem', marginTop: '-0.3rem' }}>
-  <a href="/forgot-password" style={{ color: '#2d6a4f', fontSize: '0.85rem', textDecoration: 'none', fontWeight: '600' }}>
-    Forgot Password?
-  </a>
-</div>
-
-        {/* BUTTON */}
-        <button onClick={handleLogin} style={loginBtn}>
-          Login
-        </button>
+            {loading ? "Signing in..." : "Login"}
+          </button>
+        </form>
 
         {/* MESSAGE */}
         {message && (
@@ -144,8 +169,9 @@ function Login() {
             style={{
               marginTop: "18px",
               textAlign: "center",
-              color: "#2d6a4f",
+              color: message.includes("success") ? "#2d6a4f" : "#991b1b",
               fontWeight: "600",
+              fontSize: "0.95rem",
             }}
           >
             {message}
