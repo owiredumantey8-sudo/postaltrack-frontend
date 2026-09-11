@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useParams } from 'react-router-dom';
 
 function Track() {
   const [trackingNumber, setTrackingNumber] = useState('');
@@ -8,7 +8,35 @@ function Track() {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const { trackingNumber: urlTracking } = useParams();
   const isMobile = window.innerWidth < 768;
+
+  useEffect(() => {
+    if (urlTracking) {
+      setTrackingNumber(urlTracking);
+      handleTrackById(urlTracking);
+    }
+  }, []);
+
+  const handleTrackById = async (id) => {
+    setLoading(true);
+    setParcel(null);
+    setEvents([]);
+    setMessage('');
+    try {
+      const res = await fetch('https://postaltrack-backend-production.up.railway.app/api/parcels/track/' + id);
+      const data = await res.json();
+      if (data.error) {
+        setMessage(data.error);
+      } else {
+        setParcel(data);
+        fetchEvents(data.parcel_id);
+      }
+    } catch (err) {
+      setMessage('Something went wrong. Please try again.');
+    }
+    setLoading(false);
+  };
 
   const handleTrack = async () => {
     if (!trackingNumber.trim()) {
@@ -47,7 +75,6 @@ function Track() {
     }
   };
 
-  // Status steps for progress bar
   const statusSteps = [
     'Parcel Booked',
     'Dispatched',
@@ -94,13 +121,7 @@ function Track() {
         }}
       >
         <Link to="/" style={{ textDecoration: 'none' }}>
-          <div
-            style={{
-              color: '#1b4332',
-              fontSize: isMobile ? '1.4rem' : '1.7rem',
-              fontWeight: '800',
-            }}
-          >
+          <div style={{ color: '#1b4332', fontSize: isMobile ? '1.4rem' : '1.7rem', fontWeight: '800' }}>
             Postal<span style={{ color: '#52b788' }}>Track</span>
           </div>
         </Link>
@@ -153,14 +174,7 @@ function Track() {
             🚚 Real-Time Parcel Tracking
           </div>
 
-          <h1
-            style={{
-              color: '#081c15',
-              fontSize: isMobile ? '2rem' : '2.8rem',
-              fontWeight: '900',
-              margin: '0 0 10px 0',
-            }}
-          >
+          <h1 style={{ color: '#081c15', fontSize: isMobile ? '2rem' : '2.8rem', fontWeight: '900', margin: '0 0 10px 0' }}>
             Track Your Parcel
           </h1>
 
@@ -181,13 +195,7 @@ function Track() {
             marginBottom: '30px',
           }}
         >
-          <div
-            style={{
-              display: 'flex',
-              gap: '12px',
-              flexDirection: isMobile ? 'column' : 'row',
-            }}
-          >
+          <div style={{ display: 'flex', gap: '12px', flexDirection: isMobile ? 'column' : 'row' }}>
             <input
               placeholder="e.g. TRK177889329"
               value={trackingNumber}
@@ -226,7 +234,6 @@ function Track() {
             </button>
           </div>
 
-          {/* ERROR MESSAGE */}
           {message && (
             <div
               style={{
@@ -247,14 +254,7 @@ function Track() {
 
         {/* PARCEL RESULT */}
         {parcel && (
-          <div
-            style={{
-              width: isMobile ? '100%' : '580px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '20px',
-            }}
-          >
+          <div style={{ width: isMobile ? '100%' : '580px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             {/* STATUS CARD */}
             <div
               style={{
@@ -265,36 +265,12 @@ function Track() {
                 border: '1px solid rgba(0,0,0,0.05)',
               }}
             >
-              {/* Tracking header */}
-              <div
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  marginBottom: '25px',
-                }}
-              >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                 <div>
-                  <p
-                    style={{
-                      color: '#6c757d',
-                      margin: 0,
-                      fontSize: '0.8rem',
-                      fontWeight: '600',
-                      textTransform: 'uppercase',
-                      letterSpacing: '1px',
-                    }}
-                  >
+                  <p style={{ color: '#6c757d', margin: 0, fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>
                     Tracking Number
                   </p>
-                  <h2
-                    style={{
-                      color: '#081c15',
-                      margin: '5px 0 0 0',
-                      fontSize: '1.3rem',
-                      fontWeight: '800',
-                    }}
-                  >
+                  <h2 style={{ color: '#081c15', margin: '5px 0 0 0', fontSize: '1.3rem', fontWeight: '800' }}>
                     {parcel.tracking_number}
                   </h2>
                 </div>
@@ -316,16 +292,7 @@ function Track() {
               {/* Progress Steps */}
               <div style={{ marginBottom: '25px' }}>
                 {statusSteps.map((step, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '14px',
-                      marginBottom: '14px',
-                    }}
-                  >
-                    {/* Circle */}
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
                     <div
                       style={{
                         width: '26px',
@@ -344,18 +311,10 @@ function Track() {
                       {i <= currentStep ? '✓' : ''}
                     </div>
 
-                    {/* Label */}
-                    <span
-                      style={{
-                        color: i <= currentStep ? '#081c15' : '#adb5bd',
-                        fontWeight: i <= currentStep ? '700' : '500',
-                        fontSize: '0.95rem',
-                      }}
-                    >
+                    <span style={{ color: i <= currentStep ? '#081c15' : '#adb5bd', fontWeight: i <= currentStep ? '700' : '500', fontSize: '0.95rem' }}>
                       {step}
                     </span>
 
-                    {/* Active badge */}
                     {i === currentStep && (
                       <span
                         style={{
@@ -375,75 +334,24 @@ function Track() {
                 ))}
               </div>
 
-              {/* Divider */}
-              <div
-                style={{
-                  height: '1px',
-                  background: '#f0f0f0',
-                  marginBottom: '20px',
-                }}
-              />
+              <div style={{ height: '1px', background: '#f0f0f0', marginBottom: '20px' }} />
 
-              {/* Parcel Details Grid */}
-              <h3
-                style={{
-                  color: '#1b4332',
-                  marginBottom: '15px',
-                  fontSize: '1rem',
-                  fontWeight: '700',
-                }}
-              >
+              <h3 style={{ color: '#1b4332', marginBottom: '15px', fontSize: '1rem', fontWeight: '700' }}>
                 📦 Parcel Details
               </h3>
 
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '14px',
-                }}
-              >
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 {[
                   { label: 'Recipient', value: parcel.recipient_name },
                   { label: 'Address', value: parcel.recipient_address },
                   { label: 'Weight', value: `${parcel.weight_kg} kg` },
-                  {
-                    label: 'Booked On',
-                    value: new Date(parcel.created_at).toLocaleDateString(
-                      'en-GB',
-                      { day: 'numeric', month: 'short', year: 'numeric' }
-                    ),
-                  },
+                  { label: 'Booked On', value: new Date(parcel.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) },
                 ].map((item, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      background: '#f8fffe',
-                      padding: '12px 15px',
-                      borderRadius: '10px',
-                      border: '1px solid #e8f5e9',
-                    }}
-                  >
-                    <p
-                      style={{
-                        color: '#6c757d',
-                        margin: 0,
-                        fontSize: '0.75rem',
-                        fontWeight: '600',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px',
-                      }}
-                    >
+                  <div key={i} style={{ background: '#f8fffe', padding: '12px 15px', borderRadius: '10px', border: '1px solid #e8f5e9' }}>
+                    <p style={{ color: '#6c757d', margin: 0, fontSize: '0.75rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                       {item.label}
                     </p>
-                    <p
-                      style={{
-                        color: '#081c15',
-                        margin: '4px 0 0 0',
-                        fontWeight: '600',
-                        fontSize: '0.9rem',
-                      }}
-                    >
+                    <p style={{ color: '#081c15', margin: '4px 0 0 0', fontWeight: '600', fontSize: '0.9rem' }}>
                       {item.value}
                     </p>
                   </div>
@@ -462,27 +370,12 @@ function Track() {
                   border: '1px solid rgba(0,0,0,0.05)',
                 }}
               >
-                <h3
-                  style={{
-                    color: '#1b4332',
-                    marginBottom: '20px',
-                    fontSize: '1rem',
-                    fontWeight: '700',
-                  }}
-                >
+                <h3 style={{ color: '#1b4332', marginBottom: '20px', fontSize: '1rem', fontWeight: '700' }}>
                   📍 Tracking History
                 </h3>
 
                 {events.map((event, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      display: 'flex',
-                      gap: '15px',
-                      marginBottom: index < events.length - 1 ? '20px' : '0',
-                    }}
-                  >
-                    {/* Timeline dot */}
+                  <div key={index} style={{ display: 'flex', gap: '15px', marginBottom: index < events.length - 1 ? '20px' : '0' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                       <div
                         style={{
@@ -496,57 +389,15 @@ function Track() {
                         }}
                       />
                       {index < events.length - 1 && (
-                        <div
-                          style={{
-                            width: '2px',
-                            flex: 1,
-                            background: '#d8f3dc',
-                            marginTop: '4px',
-                            minHeight: '30px',
-                          }}
-                        />
+                        <div style={{ width: '2px', flex: 1, background: '#d8f3dc', marginTop: '4px', minHeight: '30px' }} />
                       )}
                     </div>
 
-                    {/* Event details */}
                     <div style={{ paddingBottom: '8px' }}>
-                      <p
-                        style={{
-                          margin: 0,
-                          fontWeight: '700',
-                          color: '#081c15',
-                          fontSize: '0.9rem',
-                        }}
-                      >
-                        {event.status_code}
-                      </p>
-                      <p
-                        style={{
-                          margin: '3px 0',
-                          color: '#4f5d75',
-                          fontSize: '0.85rem',
-                        }}
-                      >
-                        📍 {event.location}
-                      </p>
-                      <p
-                        style={{
-                          margin: '3px 0',
-                          color: '#4f5d75',
-                          fontSize: '0.85rem',
-                        }}
-                      >
-                        {event.event_description}
-                      </p>
-                      <p
-                        style={{
-                          margin: '3px 0',
-                          color: '#adb5bd',
-                          fontSize: '0.8rem',
-                        }}
-                      >
-                        🕐 {new Date(event.event_timestamp).toLocaleString()}
-                      </p>
+                      <p style={{ margin: 0, fontWeight: '700', color: '#081c15', fontSize: '0.9rem' }}>{event.status_code}</p>
+                      <p style={{ margin: '3px 0', color: '#4f5d75', fontSize: '0.85rem' }}>📍 {event.location}</p>
+                      <p style={{ margin: '3px 0', color: '#4f5d75', fontSize: '0.85rem' }}>{event.event_description}</p>
+                      <p style={{ margin: '3px 0', color: '#adb5bd', fontSize: '0.8rem' }}>🕐 {new Date(event.event_timestamp).toLocaleString()}</p>
                     </div>
                   </div>
                 ))}
