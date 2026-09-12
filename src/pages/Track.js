@@ -7,6 +7,8 @@ function Track() {
   const [events, setEvents] = useState([]);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [secondsAgo, setSecondsAgo] = useState(0);
 
   const { trackingNumber: urlTracking } = useParams();
   const isMobile = window.innerWidth < 768;
@@ -19,7 +21,7 @@ function Track() {
     }
   }, []);
 
-  // Auto-refresh every 10 seconds silently (no blink)
+  // Auto-refresh every 10 seconds silently
   useEffect(() => {
     if (!parcel) return;
     const interval = setInterval(() => {
@@ -28,13 +30,23 @@ function Track() {
     return () => clearInterval(interval);
   }, [parcel?.tracking_number]);
 
-  // Silent background refresh — no screen clear, no blink
+  // Count seconds since last update
+  useEffect(() => {
+    if (!lastUpdated) return;
+    const timer = setInterval(() => {
+      setSecondsAgo(Math.floor((Date.now() - lastUpdated) / 1000));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lastUpdated]);
+
   const silentRefresh = async (id) => {
     try {
       const res = await fetch('https://postaltrack-backend-production.up.railway.app/api/parcels/track/' + id);
       const data = await res.json();
       if (!data.error) {
         setParcel(data);
+        setLastUpdated(Date.now());
+        setSecondsAgo(0);
         fetchEvents(data.parcel_id);
       }
     } catch (err) {
@@ -42,7 +54,6 @@ function Track() {
     }
   };
 
-  // Full track with loading state (for manual search)
   const handleTrackById = async (id) => {
     setLoading(true);
     setParcel(null);
@@ -55,6 +66,8 @@ function Track() {
         setMessage(data.error);
       } else {
         setParcel(data);
+        setLastUpdated(Date.now());
+        setSecondsAgo(0);
         fetchEvents(data.parcel_id);
       }
     } catch (err) {
@@ -63,7 +76,6 @@ function Track() {
     setLoading(false);
   };
 
-  // Manual search from input box
   const handleTrack = async () => {
     if (!trackingNumber.trim()) {
       setMessage('Please enter a tracking number.');
@@ -81,7 +93,8 @@ function Track() {
         setParcel(null);
       } else {
         setParcel(data);
-        setMessage('');
+        setLastUpdated(Date.now());
+        setSecondsAgo(0);
         fetchEvents(data.parcel_id);
       }
     } catch (err) {
@@ -114,8 +127,29 @@ function Track() {
 
   const currentStep = parcel ? getCurrentStep(parcel.current_status) : -1;
 
+  // Pulsing dot style
+  const pulsingDot = {
+    width: '10px',
+    height: '10px',
+    borderRadius: '50%',
+    background: '#52b788',
+    display: 'inline-block',
+    marginRight: '6px',
+    animation: 'pulse 1.5s infinite',
+  };
+
   return (
     <div style={{ fontFamily: "'Segoe UI', sans-serif", minHeight: '100vh', background: 'linear-gradient(135deg, #d8f3dc 0%, #f5f7fb 45%, #caf0f8 100%)' }}>
+
+      {/* Pulse animation */}
+      <style>{`
+        @keyframes pulse {
+          0% { box-shadow: 0 0 0 0 rgba(82, 183, 136, 0.7); }
+          70% { box-shadow: 0 0 0 8px rgba(82, 183, 136, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(82, 183, 136, 0); }
+        }
+      `}</style>
+
       {/* NAVBAR */}
       <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 1000, padding: isMobile ? '15px 20px' : '18px 70px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(15px)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
         <Link to="/" style={{ textDecoration: 'none' }}>
@@ -132,6 +166,7 @@ function Track() {
 
       {/* MAIN CONTENT */}
       <div style={{ paddingTop: '100px', paddingBottom: '60px', paddingLeft: isMobile ? '20px' : '0', paddingRight: isMobile ? '20px' : '0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
         {/* PAGE TITLE */}
         <div style={{ textAlign: 'center', marginBottom: '35px' }}>
           <div style={{ display: 'inline-block', padding: '8px 18px', borderRadius: '30px', background: 'rgba(82,183,136,0.15)', border: '1px solid rgba(82,183,136,0.3)', color: '#2d6a4f', fontSize: '0.85rem', marginBottom: '15px', fontWeight: '600' }}>
@@ -173,16 +208,30 @@ function Track() {
         {parcel && (
           <div style={{ width: isMobile ? '100%' : '580px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '20px', padding: '28px', boxShadow: '0 20px 50px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
+
+              {/* Tracking header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                 <div>
                   <p style={{ color: '#6c757d', margin: 0, fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '1px' }}>Tracking Number</p>
                   <h2 style={{ color: '#081c15', margin: '5px 0 0 0', fontSize: '1.3rem', fontWeight: '800' }}>{parcel.tracking_number}</h2>
+
+                  {/* 🟢 Live indicator */}
+                  {lastUpdated && (
+                    <div style={{ display: 'flex', alignItems: 'center', marginTop: '6px' }}>
+                      <span style={pulsingDot}></span>
+                      <span style={{ color: '#52b788', fontSize: '0.75rem', fontWeight: '600' }}>
+                        Live · Updated {secondsAgo === 0 ? 'just now' : `${secondsAgo}s ago`}
+                      </span>
+                    </div>
+                  )}
                 </div>
+
                 <div style={{ background: currentStep === 4 ? '#52b788' : '#fff3cd', color: currentStep === 4 ? 'white' : '#856404', padding: '8px 16px', borderRadius: '20px', fontWeight: '700', fontSize: '0.8rem' }}>
                   {currentStep === 4 ? '✅ Delivered' : '🔄 In Progress'}
                 </div>
               </div>
 
+              {/* Progress Steps */}
               <div style={{ marginBottom: '25px' }}>
                 {statusSteps.map((step, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
@@ -215,6 +264,7 @@ function Track() {
               </div>
             </div>
 
+            {/* TRACKING HISTORY */}
             {events.length > 0 && (
               <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '20px', padding: '28px', boxShadow: '0 20px 50px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
                 <h3 style={{ color: '#1b4332', marginBottom: '20px', fontSize: '1rem', fontWeight: '700' }}>📍 Tracking History</h3>
