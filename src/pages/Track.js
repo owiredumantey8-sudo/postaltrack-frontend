@@ -19,15 +19,30 @@ function Track() {
     }
   }, []);
 
-  // Auto-refresh every 10 seconds when parcel is loaded
+  // Auto-refresh every 10 seconds silently (no blink)
   useEffect(() => {
     if (!parcel) return;
     const interval = setInterval(() => {
-      handleTrackById(parcel.tracking_number);
+      silentRefresh(parcel.tracking_number);
     }, 10000);
     return () => clearInterval(interval);
   }, [parcel?.tracking_number]);
 
+  // Silent background refresh — no screen clear, no blink
+  const silentRefresh = async (id) => {
+    try {
+      const res = await fetch('https://postaltrack-backend-production.up.railway.app/api/parcels/track/' + id);
+      const data = await res.json();
+      if (!data.error) {
+        setParcel(data);
+        fetchEvents(data.parcel_id);
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
+  // Full track with loading state (for manual search)
   const handleTrackById = async (id) => {
     setLoading(true);
     setParcel(null);
@@ -48,6 +63,7 @@ function Track() {
     setLoading(false);
   };
 
+  // Manual search from input box
   const handleTrack = async () => {
     if (!trackingNumber.trim()) {
       setMessage('Please enter a tracking number.');
@@ -156,7 +172,6 @@ function Track() {
         {/* PARCEL RESULT */}
         {parcel && (
           <div style={{ width: isMobile ? '100%' : '580px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-            {/* STATUS CARD */}
             <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '20px', padding: '28px', boxShadow: '0 20px 50px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                 <div>
@@ -168,7 +183,6 @@ function Track() {
                 </div>
               </div>
 
-              {/* Progress Steps */}
               <div style={{ marginBottom: '25px' }}>
                 {statusSteps.map((step, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '14px' }}>
@@ -201,7 +215,6 @@ function Track() {
               </div>
             </div>
 
-            {/* TRACKING HISTORY */}
             {events.length > 0 && (
               <div style={{ background: 'rgba(255,255,255,0.95)', borderRadius: '20px', padding: '28px', boxShadow: '0 20px 50px rgba(0,0,0,0.08)', border: '1px solid rgba(0,0,0,0.05)' }}>
                 <h3 style={{ color: '#1b4332', marginBottom: '20px', fontSize: '1rem', fontWeight: '700' }}>📍 Tracking History</h3>
